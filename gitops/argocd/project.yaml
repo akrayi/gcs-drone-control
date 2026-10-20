@@ -6,7 +6,7 @@ metadata:
 spec:
   description: GCS test namespace only
   sourceRepos:
-    - https://github.com/YOUR_ORG/YOUR_REPO.git
+    - https://github.com/akrayi/gcs-drone-control.git
   destinations:
     - namespace: gcs
       server: https://kubernetes.default.svc

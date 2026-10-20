@@ -389,7 +389,7 @@ GitHub may coalesce queued runs to the latest source commit.
 
 ### One-time connection
 
-1. Push this project to your GitHub repository, with `main` as the release branch.
+1. Use the private `akrayi/gcs-drone-control` repository, with `main` as the release branch.
    Protect main with pull requests and the **Checks / test** status check.
 2. Create a GitHub environment named **azure-release**. In Azure, configure a
    federated credential for `repo:YOUR_ORG/YOUR_REPO:environment:azure-release`,
@@ -406,8 +406,8 @@ GitHub may coalesce queued runs to the latest source commit.
    CI uses those stable names to replace images in the overlay. Put the real Origin
    in `gitops/aks/kustomization.yaml`. Prepare namespace, external Secrets, ACR
    pull permissions, ingress controller and TLS using the AKS instructions above.
-6. Install Argo CD separately. Replace repository URLs in both files under
-   `gitops/argocd/`. If the repository is private, give Argo CD read access using
+6. Install Argo CD separately. Repository URLs in both files under
+   `gitops/argocd/` already point to `akrayi/gcs-drone-control`. Give Argo CD read access using
    its credential mechanism. Wait for the first successful release to create the
    deploy branch, then apply:
 

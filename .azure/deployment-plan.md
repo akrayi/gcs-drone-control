@@ -41,4 +41,6 @@ Subscription, region, registry, DNS, and TLS certificate are operator inputs at 
 ## Remaining deployment inputs
 GitHub repository name/owner; subscription, location, registry and cluster; OIDC identity;
 DNS/TLS; network policy engine verification; server-side dry run and rollout smoke tests.
-No Azure resources or GitHub repositories have been created and no cloud deployment has occurred.
+A private GitHub repository, akrayi/gcs-drone-control, has been created at the user's request.
+Upload requires granting workflow scope to the authenticated GitHub CLI. No Azure resources
+have been created and no cloud deployment has occurred.

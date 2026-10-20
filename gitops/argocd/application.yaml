@@ -6,7 +6,7 @@ metadata:
 spec:
   project: gcs
   source:
-    repoURL: https://github.com/YOUR_ORG/YOUR_REPO.git
+    repoURL: https://github.com/akrayi/gcs-drone-control.git
     targetRevision: deploy
     path: gitops/aks
   destination:
