@@ -42,5 +42,7 @@ Subscription, region, registry, DNS, and TLS certificate are operator inputs at 
 GitHub repository name/owner; subscription, location, registry and cluster; OIDC identity;
 DNS/TLS; network policy engine verification; server-side dry run and rollout smoke tests.
 A private GitHub repository, akrayi/gcs-drone-control, has been created at the user's request.
-Upload requires granting workflow scope to the authenticated GitHub CLI. No Azure resources
-have been created and no cloud deployment has occurred.
+The user granted workflow scope and source has been uploaded. The first hosted CI run
+identified a container test import-path issue, now corrected with `python -m pytest`.
+A full Compose startup and authenticated smoke test has been added. Hosted validation
+is in progress. No Azure resources have been created and no cloud deployment has occurred.

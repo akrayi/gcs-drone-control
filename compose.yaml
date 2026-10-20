@@ -76,7 +76,7 @@ services:
   tests:
     build: ./backend
     profiles: [test]
-    command: ["pytest", "-q", "tests"]
+    command: ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests"]
     environment:
       DATABASE_URL: postgresql+psycopg://test:ephemeral-test-only@postgres-test:5432/gcs_test
       JWT_SECRET: test-only-signing-secret-at-least-32-characters
