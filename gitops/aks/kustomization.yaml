@@ -1,0 +1,51 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../k8s
+# The root/base image names are intentionally stable placeholder names.
+# CI updates this overlay on the deploy branch, not main.
+images:
+  - name: YOUR_ACR.azurecr.io/gcs-backend
+    newName: YOUR_ACR.azurecr.io/gcs-backend
+    newTag: v1
+  - name: YOUR_ACR.azurecr.io/gcs-frontend
+    newName: YOUR_ACR.azurecr.io/gcs-frontend
+    newTag: v1
+configMapGenerator:
+  - name: gcs-config
+    behavior: merge
+    literals:
+      - ALLOWED_ORIGINS=https://gcs.example.com
+patches:
+  - target: {kind: Job, name: gcs-bootstrap-v1}
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          argocd.argoproj.io/hook: Sync
+          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+          argocd.argoproj.io/sync-wave: "1"
+  - target: {kind: Deployment, name: backend}
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          argocd.argoproj.io/sync-wave: "2"
+  - target: {kind: Deployment, name: frontend}
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          argocd.argoproj.io/sync-wave: "2"
+  - target: {kind: Namespace, name: gcs}
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  - target: {kind: StatefulSet, name: postgres}
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          argocd.argoproj.io/sync-options: Prune=false,Delete=false

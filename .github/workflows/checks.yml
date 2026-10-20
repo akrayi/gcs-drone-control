@@ -1,0 +1,42 @@
+name: Checks
+on:
+  pull_request:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build and audit dashboard
+        working-directory: frontend
+        run: |
+          npm ci
+          npm audit --audit-level=high
+          npm run build
+      - name: Generate isolated test credentials
+        run: python3 scripts/setup.py
+      - name: Test real PostgreSQL concurrency, API and OPA
+        run: |
+          docker compose --profile test run --build --rm tests
+          docker compose --profile test run --rm policy-tests
+      - name: Render Kubernetes manifests
+        run: |
+          kubectl kustomize . > /tmp/gcs-base.yaml
+          kubectl kustomize gitops/aks > /tmp/gcs-aks.yaml
+          python3 -m pip install kubernetes-validate==1.37.0
+          python3 scripts/validate-manifests.py /tmp/gcs-base.yaml /tmp/gcs-aks.yaml
+      - name: Check Python dependency advisories
+        run: |
+          python3 -m pip install pip-audit
+          pip-audit -r backend/requirements.txt --progress-spinner off
+      - name: Clean up isolated test stack
+        if: always()
+        run: docker compose --profile test down -v

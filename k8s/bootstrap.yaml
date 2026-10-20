@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gcs-bootstrap-v1
+spec:
+  backoffLimit: 8
+  template:
+    metadata:
+      labels: {app: backend}
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: backend
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: initialize
+          image: gcs-backend
+          command: [sh, -c, "python -m app.manage init && python -m app.manage bootstrap-admin"]
+          envFrom: [{secretRef: {name: backend-secret}}]
+          env:
+            - name: BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: bootstrap-secret, key: BOOTSTRAP_ADMIN_PASSWORD, optional: true}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {}}]

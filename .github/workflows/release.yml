@@ -1,0 +1,130 @@
+name: Version, publish and deploy
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+# Serialize publication and deployment. A newer queued run can supersede an older
+# queued run; the running release completes. Failed/superseded runs leave tag gaps.
+concurrency:
+  group: gcs-main-release
+  cancel-in-progress: false
+jobs:
+  checks:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/checks.yml
+  publish:
+    needs: checks
+    if: vars.ACR_NAME != '' && vars.AZURE_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' && vars.AZURE_SUBSCRIPTION_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: azure-release
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      backend_digest: ${{ steps.backend.outputs.digest }}
+      frontend_digest: ${{ steps.frontend.outputs.digest }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Assign automatic release number
+        id: version
+        env:
+          RELEASE_NUMBER: ${{ github.run_number }}
+        run: echo "version=v${RELEASE_NUMBER}" >> "$GITHUB_OUTPUT"
+      - uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Authenticate registry and prevent version reuse
+        env:
+          ACR_NAME: ${{ vars.ACR_NAME }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          test -n "$ACR_NAME"
+          az acr login --name "$ACR_NAME"
+          for image in gcs-backend gcs-frontend; do
+            if az acr repository show --name "$ACR_NAME" --image "$image:$VERSION" >/dev/null 2>&1; then
+              echo "Version $VERSION already exists. Do not overwrite a published release."
+              exit 1
+            fi
+          done
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build and push backend
+        id: backend
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ vars.ACR_NAME }}.azurecr.io/gcs-backend:${{ steps.version.outputs.version }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+      - name: Build and push frontend
+        id: frontend
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: frontend
+          push: true
+          tags: ${{ vars.ACR_NAME }}.azurecr.io/gcs-frontend:${{ steps.version.outputs.version }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+      - name: Gate backend release on fixable high/critical image vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ vars.ACR_NAME }}.azurecr.io/gcs-backend@${{ steps.backend.outputs.digest }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Gate frontend release on fixable high/critical image vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ vars.ACR_NAME }}.azurecr.io/gcs-frontend@${{ steps.frontend.outputs.digest }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+  gitops:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Prepare deployment branch from tested source
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          git config user.name 'gcs-release[bot]'
+          git config user.email 'gcs-release[bot]@users.noreply.github.com'
+          if git ls-remote --exit-code --heads origin deploy >/dev/null; then
+            git fetch origin deploy
+            git switch --create deploy origin/deploy
+            git merge --no-commit --no-ff -X theirs "$SOURCE_SHA"
+          else
+            git switch --create deploy "$SOURCE_SHA"
+          fi
+      - name: Record version and immutable image digests
+        env:
+          ACR_NAME: ${{ vars.ACR_NAME }}
+          VERSION: ${{ needs.publish.outputs.version }}
+          BACKEND_DIGEST: ${{ needs.publish.outputs.backend_digest }}
+          FRONTEND_DIGEST: ${{ needs.publish.outputs.frontend_digest }}
+        run: |
+          python3 -m pip install PyYAML
+          python3 scripts/update-images.py
+          git add gitops/aks/kustomization.yaml
+          git commit -m "Deploy GCS $VERSION"
+          git push origin deploy
+      - name: Release summary
+        env:
+          VERSION: ${{ needs.publish.outputs.version }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          echo "Published **$VERSION** from $SOURCE_SHA." >> "$GITHUB_STEP_SUMMARY"
+          echo 'The deploy branch now contains the tested manifests and image digests. Argo CD will reconcile it.' >> "$GITHUB_STEP_SUMMARY"

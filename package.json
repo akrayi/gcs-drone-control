@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "prettier": "3.6.2"
+  },
+  "name": "gcs-workspace",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write \"frontend/src/**/*.{jsx,css}\" \"frontend/*.js\"",
+    "format:check": "prettier --check \"frontend/src/**/*.{jsx,css}\" \"frontend/*.js\""
+  }
+}

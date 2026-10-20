@@ -1,0 +1,24 @@
+# Requires an installed Traefik controller and a gcs-tls Secret in namespace gcs.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gcs
+  namespace: gcs
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [gcs.example.com]
+      secretName: gcs-tls
+  rules:
+    - host: gcs.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port: {number: 8080}
