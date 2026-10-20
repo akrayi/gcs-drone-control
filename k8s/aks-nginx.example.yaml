@@ -1,0 +1,42 @@
+# Optional managed NGINX application routing for the short-lived demo.
+# Enable with --enable-app-routing. Azure support ends after November 2026.
+# Create gcs-tls in gcs and set ALLOWED_ORIGINS to the hostname below first.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gcs
+  namespace: gcs
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com
+  tls:
+    - hosts: [gcs.akshaydevops.dpdns.org]
+      secretName: gcs-tls
+  rules:
+    - host: gcs.akshaydevops.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port: {number: 8080}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-from-aks-nginx
+  namespace: gcs
+spec:
+  podSelector:
+    matchLabels: {app: frontend}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: app-routing-system}
+      ports: [{protocol: TCP, port: 8080}]
