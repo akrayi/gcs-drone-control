@@ -152,7 +152,6 @@ created merely by cloning this repository or running the tests.
 | Connect GitHub Actions to Azure using OIDC | [CI/CD setup](docs/ci-cd.md#one-time-connection) |
 | Deploy PostgreSQL, API, OPA, and frontend to AKS | [AKS deployment](docs/aks-deployment.md) |
 | Configure managed application routing and TLS | [Gateway API example](docs/aks-deployment.md#aks-managed-application-routing-option) |
-| Delete the test resources and use the project again | [Recreating the environment](docs/aks-deployment.md#delete-and-reuse-the-test-environment) |
 
 ## Checks included
 

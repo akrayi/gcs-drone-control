@@ -1,4 +1,4 @@
-# Deploying and recreating the AKS environment
+# Deploying to AKS
 
 [Back to the project](../README.md)
 
@@ -149,21 +149,3 @@ the Gateway's address. Choose this or the Traefik example, not both for the same
 hostname. Validate managed proxy labels and HTTPS/WebSocket behavior on the target
 cluster. Gateway CRDs are not included in the core Kubernetes schema checks.
 See [Microsoft's application-routing guide](https://learn.microsoft.com/azure/aks/app-routing-gateway-api).
-
-### Delete and reuse the test environment
-
-Deleting Azure resources does not delete your GitHub repository. You can recreate
-ACR and AKS, restore Secrets and ingress/TLS, reconnect identities, install Argo CD,
-and run **Version, publish and deploy → Run workflow → main** to build a new vN
-release. If registry or identity IDs change, update the GitHub variables and role
-assignments. The workflow is also manually runnable from main for this purpose.
-
-Database contents do not survive deleting their storage unless you create and
-retain a backup. Deleting ACR removes its images; CI can rebuild them from source.
-Deleting AKS removes its cluster configuration, including installed Argo CD and
-Secrets. DNS may need a new IP. Before cleanup, decide whether to retain a database
-backup. Check the dedicated test resource group, AKS node resource group, and any
-external disks, IPs, DNS zones, registries, or monitoring resources for remaining
-charges. Stopping AKS saves compute but is not equivalent to deleting all billable
-resources. Nothing in this project deletes your Azure resources automatically.
-See [AKS deletion behavior](https://learn.microsoft.com/azure/aks/delete-cluster).
