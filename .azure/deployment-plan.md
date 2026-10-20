@@ -32,10 +32,10 @@ Subscription, region, registry, DNS, and TLS certificate are operator inputs at 
 - `opa test policy -v`: 4 policy tests passed (full role/action matrix).
 - React production build passed. Browser checks in headless Edge passed: admin account creation, two-user synchronization, safety override, viewer restrictions, mobile layout; no JavaScript errors.
 - npm and installed Python dependency audits: no known vulnerabilities reported at verification time.
-- Docker Compose v2.39.4 `config --quiet`: passed. Docker image builds/runtime and image scanning have not run locally; no Docker engine is installed.
+- Docker Compose v2.39.4 `config --quiet`: passed locally. Hosted GitHub CI built the Docker images and passed the complete-stack smoke test (frontend headers, readiness, generated admin login, state and safety commands). No local Docker engine is installed; registry image scanning awaits Azure publication.
 - Kustomize rendered both base and GitOps overlay. Strict Kubernetes 1.34 schema validation passed for 52 rendered resources.
 - GitOps image updater tested with v12 and independent SHA256 digests; both Deployment image references match exactly.
-- GitHub Actions workflow syntax checked with actionlint; passed. Azure OIDC, registry publication and Argo reconciliation require real accounts/cluster and have not run.
+- GitHub Actions workflow syntax checked with actionlint; passed. Hosted CI run 39504541612 succeeded, with Azure publishing and GitOps jobs correctly skipped pending configuration. Azure OIDC, registry publication and Argo reconciliation require real accounts/cluster and have not run.
 - Manual ingress/Gateway examples require target controller, hostname and certificate. Gateway CRDs need server validation on the selected cluster.
 
 ## Remaining deployment inputs
@@ -43,6 +43,7 @@ GitHub repository name/owner; subscription, location, registry and cluster; OIDC
 DNS/TLS; network policy engine verification; server-side dry run and rollout smoke tests.
 A private GitHub repository, akrayi/gcs-drone-control, has been created at the user's request.
 The user granted workflow scope and source has been uploaded. The first hosted CI run
-identified a container test import-path issue, now corrected with `python -m pytest`.
-A full Compose startup and authenticated smoke test has been added. Hosted validation
-is in progress. No Azure resources have been created and no cloud deployment has occurred.
+identified a container test import-path issue, corrected with `python -m pytest`.
+Hosted validation including full Compose startup and authenticated smoke testing now passes.
+The README has been redesigned with a real dashboard screenshot, diagrams and linked technical guides.
+No Azure resources have been created and no cloud deployment has occurred.
