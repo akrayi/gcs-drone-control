@@ -1,0 +1,34 @@
+name: Verify frontend Trivy fix
+
+on:
+  push:
+    branches:
+      - fix/frontend-nginx-security
+    paths:
+      - frontend/**
+      - .github/workflows/verify-frontend-trivy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout proposed fix
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Build frontend image locally on GitHub runner
+        run: docker build --pull -t gcs-frontend:trivy-test ./frontend
+      - name: Scan image for fixable high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: gcs-frontend:trivy-test
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          scanners: vuln
+
+# No Azure login, ACR push, or deployment.
