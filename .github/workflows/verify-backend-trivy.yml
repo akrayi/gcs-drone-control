@@ -22,7 +22,7 @@ jobs:
       - name: Build backend image locally on GitHub runner
         run: docker build --pull -t gcs-backend:trivy-test ./backend
       - name: Scan image for fixable high and critical vulnerabilities
-        uses: aquasecurity/trivy-action@0.33.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: gcs-backend:trivy-test
           format: table
