@@ -1,66 +1,57 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../k8s
-  - ingress.yaml
-# Single-node student demo: preserve base requests, reduce replica count.
+- ../../k8s
+- ingress.yaml
 replicas:
-  - {name: backend, count: 1}
-  - {name: frontend, count: 1}
-  - {name: opa, count: 1}
-# The root/base image names are intentionally stable placeholder names.
-# CI updates this overlay on the deploy branch, not main.
+- name: backend
+  count: 1
+- name: frontend
+  count: 1
+- name: opa
+  count: 1
 images:
-  - name: YOUR_ACR.azurecr.io/gcs-backend
-    newName: YOUR_ACR.azurecr.io/gcs-backend
-    newTag: v1
-  - name: YOUR_ACR.azurecr.io/gcs-frontend
-    newName: YOUR_ACR.azurecr.io/gcs-frontend
-    newTag: v1
+- name: YOUR_ACR.azurecr.io/gcs-backend
+  newName: gcsdroneacr.azurecr.io/gcs-backend
+  newTag: v10
+  digest: sha256:f7a4516c999903184daa36e65ac4d845b14aba76f841478432a459c7ac0cd460
+- name: YOUR_ACR.azurecr.io/gcs-frontend
+  newName: gcsdroneacr.azurecr.io/gcs-frontend
+  newTag: v10
+  digest: sha256:152076cd3316fa729a07f12b4f9b37fd047ea65d9a897725be2ee91a6dcfd600
 configMapGenerator:
-  - name: gcs-config
-    behavior: merge
-    literals:
-      - ALLOWED_ORIGINS=https://gcs.akshaydevops.dpdns.org
+- name: gcs-config
+  behavior: merge
+  literals:
+  - ALLOWED_ORIGINS=https://gcs.akshaydevops.dpdns.org
 patches:
-  # Avoid reserving an additional pod during updates on the small node.
-  # Single-replica updates can briefly interrupt service.
-  - target: {kind: Deployment}
-    patch: |-
-      - op: add
-        path: /spec/strategy
-        value:
-          type: RollingUpdate
-          rollingUpdate: {maxSurge: 0, maxUnavailable: 1}
-  - target: {kind: Job, name: gcs-bootstrap-v1}
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          argocd.argoproj.io/hook: Sync
-          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-          argocd.argoproj.io/sync-wave: "1"
-  - target: {kind: Deployment, name: backend}
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          argocd.argoproj.io/sync-wave: "2"
-  - target: {kind: Deployment, name: frontend}
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          argocd.argoproj.io/sync-wave: "2"
-  - target: {kind: Namespace, name: gcs}
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          argocd.argoproj.io/sync-options: Prune=false,Delete=false
-  - target: {kind: StatefulSet, name: postgres}
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          argocd.argoproj.io/sync-options: Prune=false,Delete=false
+- target:
+    kind: Deployment
+  patch: "- op: add\n  path: /spec/strategy\n  value:\n    type: RollingUpdate\n \
+    \   rollingUpdate: {maxSurge: 0, maxUnavailable: 1}"
+- target:
+    kind: Job
+    name: gcs-bootstrap-v1
+  patch: "- op: add\n  path: /metadata/annotations\n  value:\n    argocd.argoproj.io/hook:\
+    \ Sync\n    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation\n    argocd.argoproj.io/sync-wave:\
+    \ \"1\""
+- target:
+    kind: Deployment
+    name: backend
+  patch: "- op: add\n  path: /metadata/annotations\n  value:\n    argocd.argoproj.io/sync-wave:\
+    \ \"2\""
+- target:
+    kind: Deployment
+    name: frontend
+  patch: "- op: add\n  path: /metadata/annotations\n  value:\n    argocd.argoproj.io/sync-wave:\
+    \ \"2\""
+- target:
+    kind: Namespace
+    name: gcs
+  patch: "- op: add\n  path: /metadata/annotations\n  value:\n    argocd.argoproj.io/sync-options:\
+    \ Prune=false,Delete=false"
+- target:
+    kind: StatefulSet
+    name: postgres
+  patch: "- op: add\n  path: /metadata/annotations\n  value:\n    argocd.argoproj.io/sync-options:\
+    \ Prune=false,Delete=false"
