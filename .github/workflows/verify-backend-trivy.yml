@@ -1,0 +1,34 @@
+name: Verify backend Trivy fix
+
+on:
+  push:
+    branches:
+      - fix/trivy-backend-pip-vendor
+    paths:
+      - backend/**
+      - .github/workflows/verify-backend-trivy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout proposed fix
+        uses: actions/checkout@v4
+      - name: Build backend image locally on GitHub runner
+        run: docker build --pull -t gcs-backend:trivy-test ./backend
+      - name: Scan image for fixable high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: gcs-backend:trivy-test
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          scanners: vuln
+
+# This workflow intentionally has no Azure login, registry push, or deployment.
