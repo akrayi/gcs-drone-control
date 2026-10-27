@@ -1,4 +1,4 @@
-FROM openpolicyagent/opa:1.4.2-static
+FROM openpolicyagent/opa:1.21.4-static
 COPY authz.rego /policy/authz.rego
 USER 65532:65532
 EXPOSE 8181
